@@ -147,11 +147,11 @@ var attachEvents = function() {
             redraw();
             break;
         case arrow.up:
-            if (attemptMove( 0.05))
+            if (attemptMove( 0.025))
                 redraw();
             break;
         case arrow.down:
-            if (attemptMove(-0.05))
+            if (attemptMove(-0.025))
                 redraw();
             break;
         }
@@ -259,7 +259,7 @@ var drawColumns = function(canv, hits) {
         if (hit === undefined)
             continue;
 
-        h = (-1 * hit.t * Math.cos(ang) + 1) * canv.height;
+        h = (canv.height * 0.25) / (hit.t * Math.cos(ang));
         if (h <= 0)
             continue;
 
