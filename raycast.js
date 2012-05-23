@@ -49,6 +49,11 @@ var Line = function(start, dir) {
     this.dir   = dir;
 };
 
+Line.prototype.eval = function(t) {
+    return new Vector2d(this.start.x + this.dir.x * t,
+                        this.start.y + this.dir.y * t);
+};
+
 Line.prototype.intersect = function(other) {
     var A = new Matrix2d(this.dir.x, -other.dir.x,
                          this.dir.y, -other.dir.y),
@@ -156,14 +161,21 @@ var attachEvents = function() {
 var attemptMove = function(dist) {
     // TODO: actually, use a line segment for the move and use intersection
     //       to determine collision
-    var newPos = new Vector2d(player.pos.x + player.dir.x * dist,
-                              player.pos.y + player.dir.y * dist);
+    var ray = new Line(player.pos, player.dir),
+        ts;
 
-    for (var i = 0; i < map.walls.length; i++)
-        if (map.walls[i].line.distToPoint(newPos) < 0.1)
-            return false;
+    for (var i = 0; i < map.walls.length; i++) {
+        ts = ray.intersect(map.walls[i].line);
 
-    player.pos = newPos;
+        if (ts[0] < 0 || ts[0] > dist)
+            continue;
+        if (ts[1] < 0 || ts[1] > 1)
+            continue;
+
+        return false;
+    }
+
+    player.pos = ray.eval(dist);
     return true;
 };
 
