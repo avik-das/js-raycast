@@ -17,6 +17,10 @@ Vector2d.prototype.norm = function() {
     return Math.sqrt(this.x * this.x + this.y * this.y);
 };
 
+Vector2d.prototype.mult = function(k) {
+    return new Vector2d(this.x * k, this.y * k);
+};
+
 // -- 2D MATRIX ---------------------------------------------------------------
 
 var Matrix2d = function(a, b, c, d) {
@@ -159,15 +163,13 @@ var attachEvents = function() {
 };
 
 var attemptMove = function(dist) {
-    // TODO: actually, use a line segment for the move and use intersection
-    //       to determine collision
-    var ray = new Line(player.pos, player.dir),
+    var ray = new Line(player.pos, player.dir.mult(dist)),
         ts;
 
     for (var i = 0; i < map.walls.length; i++) {
         ts = ray.intersect(map.walls[i].line);
 
-        if (ts[0] < 0 || ts[0] > dist)
+        if (ts[0] < 0 || ts[0] > 1)
             continue;
         if (ts[1] < 0 || ts[1] > 1)
             continue;
@@ -175,7 +177,7 @@ var attemptMove = function(dist) {
         return false;
     }
 
-    player.pos = ray.eval(dist);
+    player.pos = ray.eval(1);
     return true;
 };
 
