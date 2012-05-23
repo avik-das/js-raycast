@@ -13,10 +13,6 @@ Vector2d.prototype.rotateBy = function(ang) {
     return new Vector2d(x, y);
 };
 
-Vector2d.prototype.norm = function() {
-    return Math.sqrt(this.x * this.x + this.y * this.y);
-};
-
 Vector2d.prototype.mult = function(k) {
     return new Vector2d(this.x * k, this.y * k);
 };
@@ -71,19 +67,6 @@ Line.prototype.intersect = function(other) {
 
     ts = inv.leftMultVector(b);
     return [ts.x, ts.y];
-};
-
-Line.prototype.distToPoint = function(p, debug) {
-    // dist = | (start - pt) - ((start - pt).dot(n))*n |
-    //   where n = dir.normalized()
-    var ap   = new Vector2d(this.start.x - p.x, this.start.y - p.y),
-        norm = Math.sqrt(this.dir.norm()),
-        n    = new Vector2d(this.dir.x / norm, this.dir.y / norm),
-        apn  = ap.x * n.x + ap.y * n.y,
-        apnn = new Vector2d(apn * n.x, apn * n.y),
-        perp = new Vector2d(ap.x - apnn.x, ap.y - apnn.y);
-
-    return perp.norm();
 };
 
 // -- COLOR -------------------------------------------------------------------
