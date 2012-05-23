@@ -219,11 +219,13 @@ var castOneRay = function(ray) {
 
 var drawColumns = function(canv, hits) {
     var hit, x, h,
-        ctx = canv.getContext('2d');
+        ctx = canv.getContext('2d'),
+        dAng = player.fov / canv.width, ang;
 
     ctx.lineWidth = 1;
 
     for (var i = 0; i < canv.width; i++) {
+        ang = dAng * (i - canv.width / 2);
         x   = i + 0.5;
 
         // 1. draw sky
@@ -245,7 +247,7 @@ var drawColumns = function(canv, hits) {
         if (hit === undefined)
             continue;
 
-        h = (-1 * hit.t + 1) * canv.height;
+        h = (-1 * hit.t * Math.cos(ang) + 1) * canv.height;
         if (h <= 0)
             continue;
 
