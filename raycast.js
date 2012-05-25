@@ -77,30 +77,57 @@ var Color = function(r, g, b) {
     this.b = b;
 
     this.canvasColor = 'rgb(' +
-        (r * 255) + ',' + (g * 255) + ',' + (b * 255) + ')';
+        Math.round(r * 255) + ',' +
+        Math.round(g * 255) + ',' +
+        Math.round(b * 255) + ')';
 };
+
+Color.ERROR = new Color(1, 0, 1);
 
 // -- DATA --------------------------------------------------------------------
 
 var rawMap = {
     walls: [
-        { start: [0.0, 0.5], end: [0.2, 0.5], color: [1, 0, 0] },
-        { start: [0.2, 0.5], end: [0.2, 0.3], color: [0, 1, 0] },
-        { start: [0.2, 0.3], end: [0.8, 0.3], color: [0, 0, 1] },
-        { start: [0.8, 0.3], end: [0.8, 0.5], color: [1, 1, 0] },
-        { start: [0.8, 0.5], end: [1.0, 0.5], color: [0, 1, 1] }
+        { start: [0.0, 0.5], end: [0.2, 0.5], texture: 'brick.jpg' },
+        { start: [0.2, 0.5], end: [0.2, 0.3], texture: 'brick.jpg' },
+        { start: [0.2, 0.3], end: [0.8, 0.3], texture: 'orange-damascus.png' },
+        { start: [0.8, 0.3], end: [0.8, 0.5], color: [1, 0, 0] },
+        { start: [0.8, 0.5], end: [1.0, 0.5], color: [0, 0, 1] }
     ]
 };
 
 var map = { walls: [] };
 
 var player = {
-    pos: new Vector2d(0.5,  0.7),
+    pos: new Vector2d(0.5,  1.0),
     dir: new Vector2d(0.0, -1.0),
     fov: Math.PI / 2
 };
 
 // -- MAIN FUNCTIONALITY ------------------------------------------------------
+
+var loadTexture = function() {
+    var textures = {};
+    return function(src, callback) {
+        src = 'textures/' + src;
+        if (textures[src])
+            callback(textures[src]);
+
+        var canv = document.createElement('canvas');
+        var ctx  = canv.getContext('2d');
+        textures[src] = canv;
+
+        var img = new Image;
+        img.onload = function() {
+            canv.width  = this.width;
+            canv.height = this.height;
+            ctx.clearRect(0, 0, this.width, this.height);
+            ctx.drawImage(this, 0, 0);
+            callback(canv);
+        };
+        img.src = src;
+    };
+}();
 
 var processRawMap = function() {
     var wall, start, end, color;
@@ -111,11 +138,18 @@ var processRawMap = function() {
         dir   = new Vector2d(
             rawWall.end[0] - start.x, rawWall.end[1] - start.y);
 
-        color = new Color(
-            rawWall.color[0], rawWall.color[1], rawWall.color[2]);
+        color = rawWall.color ?
+            new Color(rawWall.color[0], rawWall.color[1], rawWall.color[2]) :
+            Color.ERROR;
 
         wall = {line: new Line(start, dir), color: color};
         map.walls.push(wall);
+
+        if (rawWall.texture)
+            loadTexture(rawWall.texture,
+                function(wall) {
+                    return function(tex) { wall.texture = tex; redraw(); }
+                }(wall));
     });
 };
 
@@ -193,7 +227,7 @@ var castRays = function(nrays) {
 
 var castOneRay = function(ray) {
     var ts,
-        minT = Infinity, closestWall = undefined;
+        minT = Infinity, closestWall = undefined, wallT = Infinity;
 
     map.walls.forEach(function(wall) {
         ts = ray.intersect(wall.line);
@@ -206,18 +240,20 @@ var castOneRay = function(ray) {
         if (ts[0] < minT) {
             minT = ts[0];
             closestWall = wall;
+            wallT = ts[1];
         }
     });
 
     if (closestWall !== undefined)
-        return {t: minT, wall: closestWall}
+        return {t: minT, wall: closestWall, wallT: wallT}
     return undefined;
 };
 
 var drawColumns = function(canv, hits) {
     var hit, x, h,
         ctx = canv.getContext('2d'),
-        dAng = player.fov / canv.width, ang;
+        dAng = player.fov / canv.width, ang,
+        tex, wallx;
 
     ctx.lineWidth = 1;
 
@@ -248,10 +284,20 @@ var drawColumns = function(canv, hits) {
         if (h <= 0)
             continue;
 
-        ctx.beginPath();
-        ctx.strokeStyle = hit.wall.color.canvasColor;
-        ctx.moveTo(x, (canv.height - h) / 2);
-        ctx.lineTo(x, (canv.height + h) / 2);
-        ctx.stroke();
+        if (!hit.wall.texture) {
+            ctx.beginPath();
+            ctx.strokeStyle = hit.wall.color.canvasColor;
+            ctx.moveTo(x, (canv.height - h) / 2);
+            ctx.lineTo(x, (canv.height + h) / 2);
+            ctx.stroke();
+        }
+        else {
+            tex   = hit.wall.texture;
+            wallx = Math.round(tex.width * hit.wallT) % tex.width;
+            ctx.drawImage(
+                tex,
+                wallx, 0, 1, tex.height,
+                i, (canv.height - h) / 2, 1, h);
+        }
     }
 };
