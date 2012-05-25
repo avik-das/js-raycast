@@ -72,14 +72,21 @@ Line.prototype.intersect = function(other) {
 // -- COLOR -------------------------------------------------------------------
 
 var Color = function(r, g, b) {
-    this.r = r;
-    this.g = g;
-    this.b = b;
+    this.r = Math.max(0, Math.min(r, 1));
+    this.g = Math.max(0, Math.min(g, 1));
+    this.b = Math.max(0, Math.min(b, 1));
 
     this.canvasColor = 'rgb(' +
         Math.round(r * 255) + ',' +
         Math.round(g * 255) + ',' +
         Math.round(b * 255) + ')';
+};
+
+Color.prototype.intensify = function(multiplier) {
+    return new Color(
+        this.r * multiplier,
+        this.g * multiplier,
+        this.b * multiplier);
 };
 
 Color.ERROR = new Color(1, 0, 1);
@@ -250,7 +257,7 @@ var castOneRay = function(ray) {
 };
 
 var drawColumns = function(canv, hits) {
-    var hit, x, h,
+    var hit, x, h, color,
         ctx = canv.getContext('2d'),
         dAng = player.fov / canv.width, ang,
         tex, wallx;
@@ -285,8 +292,12 @@ var drawColumns = function(canv, hits) {
             continue;
 
         if (!hit.wall.texture) {
+            color = hit.wall.color;
+            if (hit.t > 1)
+                    color = color.intensify(1 / hit.t);
+
             ctx.beginPath();
-            ctx.strokeStyle = hit.wall.color.canvasColor;
+            ctx.strokeStyle = color.canvasColor;
             ctx.moveTo(x, (canv.height - h) / 2);
             ctx.lineTo(x, (canv.height + h) / 2);
             ctx.stroke();
@@ -298,6 +309,14 @@ var drawColumns = function(canv, hits) {
                 tex,
                 wallx, 0, 1, tex.height,
                 i, (canv.height - h) / 2, 1, h);
+
+            if (hit.t > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(0,0,0,' + (1 - 1 / hit.t) + ')';
+                ctx.moveTo(x, (canv.height - h) / 2);
+                ctx.lineTo(x, (canv.height + h) / 2);
+                ctx.stroke();
+            }
         }
     }
 };
